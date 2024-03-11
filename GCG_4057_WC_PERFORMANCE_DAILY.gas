@@ -1,0 +1,407 @@
+Program.Sub.ScreenSU.Start
+gui.F_Performance..create
+gui.F_Performance..caption("Performance by Workcenter")
+gui.F_Performance..size(3375,1905)
+gui.F_Performance..position(0,0)
+gui.F_Performance..event(unload,F_Performance_Unload)
+gui.F_Performance..alwaysontop(False)
+gui.F_Performance..fontname("Arial")
+gui.F_Performance..fontsize(7)
+gui.F_Performance..forecolor(0)
+gui.F_Performance..fontstyle(,,,,)
+gui.F_Performance..BackColor(15790320)
+gui.F_Performance..controlbox(True)
+gui.F_Performance..maxbutton(True)
+gui.F_Performance..minbutton(True)
+gui.F_Performance..mousepointer(0)
+gui.F_Performance..moveable(True)
+gui.F_Performance..sizeable(False)
+gui.F_Performance..ShowInTaskBar(False)
+gui.F_Performance..titlebar(True)
+gui.F_Performance.dtpStartDate.create(datepicker)
+gui.F_Performance.dtpStartDate.visible(True)
+gui.F_Performance.dtpStartDate.size(3000,270)
+gui.F_Performance.dtpStartDate.zorder(0)
+gui.F_Performance.dtpStartDate.position(105,360)
+gui.F_Performance.dtpStartDate.enabled(True)
+gui.F_Performance.dtpStartDate.checkbox(True)
+gui.F_Performance.dtpStartDate.defaultvalue("")
+gui.F_Performance.dtpStartDate.controlgroup(0)
+gui.F_Performance.lblStartDate.create(label,"Select an ending performance date.",True,2355,210,1,100,100,True,0,Arial,7,15790320,0)
+gui.F_Performance.lblStartDate.defaultvalue("")
+gui.F_Performance.lblStartDate.controlgroup(0)
+gui.F_Performance.rBtnDay.create(option)
+gui.F_Performance.rBtnDay.caption("7 day history")
+gui.F_Performance.rBtnDay.visible(True)
+gui.F_Performance.rBtnDay.size(1560,300)
+gui.F_Performance.rBtnDay.zorder(0)
+gui.F_Performance.rBtnDay.position(105,660)
+gui.F_Performance.rBtnDay.enabled(True)
+gui.F_Performance.rBtnDay.alignment(0)
+gui.F_Performance.rBtnDay.fontname("Arial")
+gui.F_Performance.rBtnDay.fontsize(7)
+gui.F_Performance.rBtnDay.event(click,rBtnDay_Click)
+gui.F_Performance.rBtnDay.defaultvalue("")
+gui.F_Performance.rBtnDay.controlgroup(0)
+gui.F_Performance.rBtnWeeks.create(option)
+gui.F_Performance.rBtnWeeks.caption("7 week history")
+gui.F_Performance.rBtnWeeks.visible(True)
+gui.F_Performance.rBtnWeeks.size(1305,360)
+gui.F_Performance.rBtnWeeks.zorder(0)
+gui.F_Performance.rBtnWeeks.position(1890,630)
+gui.F_Performance.rBtnWeeks.enabled(True)
+gui.F_Performance.rBtnWeeks.alignment(0)
+gui.F_Performance.rBtnWeeks.fontname("Arial")
+gui.F_Performance.rBtnWeeks.fontsize(7)
+gui.F_Performance.rBtnWeeks.event(click,rbtnweeks_click)
+gui.F_Performance.rBtnWeeks.defaultvalue("")
+gui.F_Performance.rBtnWeeks.controlgroup(0)
+gui.F_Performance.btnPrint.create(button)
+gui.F_Performance.btnPrint.caption("Print")
+gui.F_Performance.btnPrint.visible(True)
+gui.F_Performance.btnPrint.size(1380,405)
+gui.F_Performance.btnPrint.zorder(0)
+gui.F_Performance.btnPrint.position(105,945)
+gui.F_Performance.btnPrint.enabled(True)
+gui.F_Performance.btnPrint.fontname("Arial")
+gui.F_Performance.btnPrint.fontsize(7)
+gui.F_Performance.btnPrint.event(click,btnPrint_Click)
+gui.F_Performance.btnPrint.defaultvalue("")
+gui.F_Performance.btnPrint.controlgroup(0)
+gui.F_Performance.rBtnDay.tabstop(True)
+gui.F_Performance.rBtnDay.tabindex(11)
+gui.F_Performance.rBtnWeeks.tabstop(False)
+gui.F_Performance.rBtnWeeks.tabindex(12)
+gui.F_Performance.btnPrint.tabstop(True)
+gui.F_Performance.btnPrint.tabindex(22)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Variable.Global.bDaily.Declare(Boolean,False)
+Variable.Global.bWeekly.Declare(Boolean,False)
+Variable.Global.dSelectedDate.Declare(Date,11/05/1955)
+
+Variable.UDT.PERFORMANCE.Define("WORKGROUP",String,WORKGROUP)
+Variable.UDT.PERFORMANCE.Define("WORKCENTER",String,WORKCENTER)
+Variable.UDT.PERFORMANCE.Define("PRODUCTIVITY",Long,PRODUCTIVITY)
+Variable.UDT.PERFORMANCE.Define("DEPARTMENT",String,DEPARTMENT)
+Variable.UDT.PERFORMANCE.Define("RANGETYPE",String,RANGETYPE)
+Variable.UDT.PERFORMANCE.Define("ESTIMATEDHOURS",Long,ESTIMATED)
+Variable.UDT.PERFORMANCE.Define("ACTUALHOURS",Long,ACTUAL)
+Variable.UDT.PERFORMANCE.Define("DATESTART",Date,START_DATE)
+Variable.UDT.PERFORMANCE.Define("BIRunID",Long,BIRunID)
+Variable.UDT.PERFORMANCE.Define("BegDate",Date,Beg_Date)
+Variable.uGlobal.uPERFORMANCE.Declare("PERFORMANCE")
+Variable.Global.sQuery.Declare(String)
+Variable.UDT.DEPARTMENTS.Define("DEPARTMENT",String,DEPARTMENT)
+Variable.UDT.DEPARTMENTS.Define("WORKGROUP",String,WORKGROUP)
+Variable.UDT.DEPARTMENTS.Define("WORKCENTER",String,WORKCENTER)
+Variable.uGlobal.uDEPARTMENTS.Declare("DEPARTMENTS")
+Variable.Global.iRangeSlot.Declare(Long,-1)
+Variable.Global.iBIRunID.Declare(Long,-1)
+Variable.Global.iBILogID.Declare(Long,-1)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+V.Local.sError.Declare
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Global.dSelectedDate.Set(V.Ambient.Date)
+V.Global.bDaily.Set(True)
+F.Intrinsic.Control.CallSub(Processperformance)
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4057_WC_PERFORMANCE_DAILY.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.btnPrint_Click.Start
+V.Global.dSelectedDate.Set(V.Screen.F_Performance!dtpStartDate.Value)
+F.Intrinsic.Control.CallSub(Processperformance)
+
+Program.Sub.btnPrint_Click.End
+
+Program.Sub.F_Performance_Unload.Start
+F.Intrinsic.Control.End
+
+Program.Sub.F_Performance_Unload.End
+
+Program.Sub.ProcessPerformance.Start
+V.Local.dBeginingDate.Declare
+V.Local.sBeginingDate.Declare
+V.Local.sSelectedDate.Declare
+V.Local.sDateRange.Declare
+V.Local.sRet.Declare
+V.Local.sCurrentDate.Declare
+V.Local.sParam.Declare
+V.Local.sVal.Declare
+V.Local.iRptID.Declare(Long)
+V.Local.sFilePath.Declare(String)
+V.Local.bDir.Declare(Boolean)
+V.Local.sDate.Declare(String)
+V.Local.iRange.Declare
+V.Local.iCount.Declare
+V.Local.iCount2.Declare
+V.Local.iDimCounter.Declare
+V.Local.iNumOfDays.Declare
+V.Local.iNextDate.Declare
+V.Local.iCalenderslot.Declare
+V.Local.iCalenderslot.Set(1)
+
+V.Local.sError.Declare
+F.Intrinsic.Control.SetErrorHandler("Process_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+F.Global.BI.GetRunID(V.Global.iBIRunID)
+F.Global.BI.StartLogging(V.Global.iBIRunID,-1,-1,"",V.Global.iBILogID)
+
+V.Local.sDate.Set(V.Ambient.Date)
+'Set File path to save the PDF
+F.Intrinsic.String.Concat(V.Caller.FilesDir,"\Performance\",V.Local.sFilePath)
+F.Intrinsic.File.DirExists(V.Local.sFilePath,V.Local.bDir)
+F.Intrinsic.Control.If(V.Local.bDir,=,"False")
+	F.Intrinsic.File.CreateDir(V.Local.sFilePath)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.String.Concat("SELECT WC.WC_DEPT AS DEPARTMENT, WL.WORKGROUP AS WORKGROUP, WC.MACHINE AS WORKCENTER FROM WORKCENTERS WC LEFT OUTER JOIN  WORKGROUP_LINE WL ON WC.MACHINE = WL.WORKCENTER WHERE WC.WC_DEPT <> '' ORDER BY DEPARTMENT, WORKCENTER","",V.Global.sQuery)
+F.ODBC.Connection!conx.OpenRecordsetRO("rstGetWG",V.Global.sQuery)
+
+F.Intrinsic.Control.If(V.ODBC.conx!rstGetWG.EOF,<>,True)
+	F.Intrinsic.Variable.LoadUDTFromRecordset("conx","rstGetWG","V.uGlobal.uDEPARTMENTS",False)
+F.Intrinsic.Control.Else
+	F.Intrinsic.Debug.SetLA("No activity present for the selected date range.")
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+
+F.ODBC.conx!rstGetWG.Close
+F.Intrinsic.Control.If(V.Global.dSelectedDate.Length,=,0)
+	V.Global.dSelectedDate.Set(V.Ambient.Date)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Global.bDaily,=,True)
+	F.Intrinsic.Date.DateSubtractWorkdays(V.Global.dSelectedDate,6,127,V.Local.dBeginingDate)
+F.Intrinsic.Control.ElseIf(V.Global.bWeekly,=,True)
+	F.Intrinsic.Date.DateSubtractWorkdays(V.Global.dSelectedDate,48,127,V.Local.dBeginingDate)
+F.Intrinsic.Control.EndIF
+
+F.Intrinsic.String.Format(V.Local.dBeginingDate,"yyyy-mm-dd",V.Local.sBeginingDate)
+F.Intrinsic.String.Format(V.Global.dSelectedDate,"yyyy-mm-dd",V.Local.sSelectedDate)
+
+F.Intrinsic.Control.If(V.Global.bDaily,=,True)
+	V.Local.iRange.Set(0)
+	V.Local.iNumOfDays.Set(6)
+F.Intrinsic.Control.ElseIf(V.Global.bWeekly,=,True)
+	V.Local.iNumOfDays.Set(48)
+	V.Local.iRange.Set(1)
+F.Intrinsic.Control.EndIF
+
+V.Local.sDateRange.Set(V.Local.sBeginingDate)
+
+F.Intrinsic.Control.For(V.Local.iCount,1,V.Local.iNumOfDays,1)
+	F.Intrinsic.Date.Dateadd("D",V.Local.iCount,V.Local.sBeginingDate,V.Local.sRet)
+	F.Intrinsic.String.Format(V.Local.sRet,"yyyy-mm-dd",V.Local.sRet)
+	F.Intrinsic.String.Concat(V.Local.sDateRange,"*!*",V.Local.sRet,V.Local.sDateRange)
+F.Intrinsic.Control.Next(V.Local.iCount)
+
+F.Intrinsic.Control.For(V.Local.iCount,0,V.uGlobal.uDEPARTMENTS.UBound,1)
+	F.Intrinsic.String.Concat("SELECT (CASE WHEN SUBSTRING(DATE_START,5,2) <> '00' THEN CONVERT(CONCAT('20',SUBSTRING(DATE_START,5,2) + '-' + SUBSTRING(DATE_START,1,2) + '-' + SUBSTRING(DATE_START,3,2)),SQL_DATE) END ) AS START_DATE,","",V.Global.sQuery)
+	F.Intrinsic.String.Concat(V.Global.sQuery," SUM(HOURS_ESTIMATED) AS ESTIMATED, SUM(HOURS_ACTUAL) AS ACTUAL, ","",V.Global.sQuery)
+	F.Intrinsic.String.Concat(V.Global.sQuery," (CASE WHEN HOURS_ACTUAL > 0 THEN CAST((HOURS_ESTIMATED/HOURS_ACTUAL * 100) AS DECIMAL(18,2)) ELSE 0.00 END ) AS PRODUCTIVITY FROM JOB_OPERATIONS_WC WHERE WORKCENTER = '",V.uGlobal.uDEPARTMENTS(V.Local.iCount)!WORKCENTER,"' AND START_DATE BETWEEN '",V.Local.sBeginingDate,"' AND '",V.Local.sSelectedDate,"' GROUP BY START_DATE","",V.Global.sQuery)
+	F.Intrinsic.String.Concat(V.Global.sQuery," UNION ALL","",V.Global.sQuery)
+	F.Intrinsic.String.Concat(V.Global.sQuery," SELECT (CASE WHEN SUBSTRING(DATE_START,5,2) <> '00' THEN CONVERT(CONCAT('20',SUBSTRING(DATE_START,5,2) + '-' + SUBSTRING(DATE_START,1,2) + '-' + SUBSTRING(DATE_START,3,2)),SQL_DATE) END ) AS START_DATE,","",V.Global.sQuery)
+	F.Intrinsic.String.Concat(V.Global.sQuery," SUM(HOURS_ESTIMATED) AS ESTIMATED, SUM(HOURS_ACTUAL) AS ACTUAL,","",V.Global.sQuery)
+	F.Intrinsic.String.Concat(V.Global.sQuery," (CASE WHEN HOURS_ACTUAL > 0 THEN CAST((HOURS_ESTIMATED/HOURS_ACTUAL * 100) AS DECIMAL(18,2)) ELSE 0.00 END ) AS PRODUCTIVITY FROM JOB_HIST_OPS_WC WHERE WORKCENTER = '",V.uGlobal.uDEPARTMENTS(V.Local.iCount)!WORKCENTER,"' AND START_DATE BETWEEN '",V.Local.sBeginingDate,"' AND '",V.Local.sSelectedDate,"' GROUP BY START_DATE","",V.Global.sQuery)
+	F.ODBC.Connection!conx.OpenRecordsetRO("rstGetHours",V.Global.sQuery)
+	F.Intrinsic.Control.If(V.ODBC.conx!rstGetHours.EOF,<>,True)
+		F.Intrinsic.Control.DoUntil(V.ODBC.conx!rstGetHours.EOF,=,True)
+			F.Intrinsic.Math.Add(V.Local.iDimCounter,1,V.Local.iDimCounter)
+			V.uGlobal.uPERFORMANCE.RedimPreserve(0,V.Local.iDimCounter)
+			V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!DEPARTMENT.Set(V.uGlobal.uDEPARTMENTS(V.Local.iCount)!DEPARTMENT)
+			V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!WORKGROUP.Set(V.uGlobal.uDEPARTMENTS(V.Local.iCount)!WORKGROUP)
+			V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!WORKCENTER.Set(V.uGlobal.uDEPARTMENTS(V.Local.iCount)!WORKCENTER)
+			V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!DATESTART.Set(V.ODBC.conx!rstGetHours.FieldVal!START_DATE)
+			V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!ESTIMATEDHOURS.Set(V.ODBC.conx!rstGetHours.FieldVal!ESTIMATED)
+			V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!ACTUALHOURS.Set(V.ODBC.conx!rstGetHours.FieldVal!ACTUAL)
+			V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!PRODUCTIVITY.Set(V.ODBC.conx!rstGetHours.FieldVal!PRODUCTIVITY)
+			V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!BIRunID.Set(V.Global.iBIRunID)
+			F.Intrinsic.Control.If(V.Global.bDaily,=,True)
+				V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!RANGETYPE.Set(0)
+			F.Intrinsic.Control.ElseIf(V.Global.bWeekly,=,True)
+				V.uGlobal.uPERFORMANCE(V.Local.iDimCounter)!RANGETYPE.Set(1)
+			F.Intrinsic.Control.EndIF
+		F.ODBC.conx!rstGetHours.MoveNext
+		F.Intrinsic.Control.Loop
+	F.Intrinsic.Control.EndIf
+	F.ODBC.conx!rstGetHours.Close
+F.Intrinsic.Control.Next(V.Local.iCount)
+
+F.Intrinsic.Variable.UDTMultiQuickSort(V.uGlobal.uPERFORMANCE!DATESTART,False,V.uGlobal.uPERFORMANCE!DEPARTMENT,False)
+F.Intrinsic.Variable.UDTMultiSeek(V.uGlobal.uPERFORMANCE!DEPARTMENT," ",V.Local.sRet)
+F.Intrinsic.Variable.uDTFlagOrdinal(V.uGlobal.uPERFORMANCE,True,V.Local.sRet)
+F.Intrinsic.Variable.UDTDeleteFlagged(V.uGlobal.uPERFORMANCE)
+
+F.Intrinsic.Variable.UDTSetMemberValue(V.uGlobal.uPerformance!BegDate,V.Local.sBeginingDate)
+
+F.Intrinsic.String.Concat("DELETE from GCG_4057_WCPERF where RANGETYPE ='",V.Local.iRange,"'",V.Global.sQuery)
+F.ODBC.Connection!conx.Execute(V.Global.sQuery)
+
+F.Intrinsic.String.Concat("SELECT * FROM GCG_4057_WCPERF","",V.Global.sQuery)
+F.ODBC.Connection!conx.OpenRecordsetRW("rstFillTable",V.Global.sQuery)
+F.Intrinsic.Variable.SaveUDTToRecordset("conx","rstFillTable","Variable.uGlobal.uPERFORMANCE")
+
+F.ODBC.Connection!conx.Close
+
+'Get the report ID from the BIR_User_Seq Table so that the save report function can be used.
+F.Intrinsic.String.Concat("Select Report_ID From BIR_User_Seq where company = '",V.Caller.CompanyCode,"' and Report_File = 'GCG_4057_WC_Performance_Daily.rpt'",V.Global.sQuery)
+F.ODBC.Connection!conx.OpenConnection(V.Ambient.Ccon,V.Ambient.Cuser,V.Ambient.Cpass)
+F.ODBC.Connection!conx.OpenRecordsetRO("rst",V.Global.sQuery)
+V.Local.iRptID.Set(V.ODBC.conx!rst.FieldValTrim!Report_ID)
+F.ODBC.conx!rst.Close
+F.ODBC.Connection!conx.Close
+
+F.Global.BI.StopLogging(V.Global.iBILogID)
+V.Local.sParam.Set("BIRUNID")
+V.Local.sVal.Set(V.Global.iBIRunID)
+'Print the Report
+F.Global.BI.RunReportPreProcessor(V.Global.iBIRunID,V.Global.iBILogID,V.Local.sParam,V.Local.sVal,"",-1,True,"",-1,"",-1,"","",V.Global.iBIRunID)
+
+'Save report as PDF
+F.Intrinsic.String.Concat(V.Local.sFilePath,"Perf_Daily_Dept_",V.Local.sDate.PervasiveDate,".pdf",V.Local.sFilePath)
+'get the report ID from the BIR_User_Seq table Match the report_file value to the report name.
+F.Global.BI.SaveReport(V.Local.iRptID,1,V.Local.sParam,V.Local.sVal,V.Local.sFilePath)
+
+F.Intrinsic.Control.Label("Process_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4057_WC_PERFORMANCE_DAILY.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.ProcessPerformance.End
+
+Program.Sub.rBtnDay_Click.Start
+V.Global.bDaily.Set(True)
+V.Global.bWeekly.Set(False)
+
+Program.Sub.rBtnDay_Click.End
+
+program.sub.rbtnweeks_click.start
+V.Global.bWeekly.Set(True)
+V.Global.bDaily.Set(False)
+
+program.sub.rbtnweeks_click.end
+
+Program.Sub.GetRangeSlot.Start
+F.Intrinsic.Control.SelectCase(V.Args.DateCount)
+	F.Intrinsic.Control.Case(0)
+		V.Global.iRangeSlot.Set(0)
+	F.Intrinsic.Control.Case(1)
+		V.Global.iRangeSlot.Set(0)
+	F.Intrinsic.Control.Case(2)
+		V.Global.iRangeSlot.Set(0)
+	F.Intrinsic.Control.Case(3)
+		V.Global.iRangeSlot.Set(0)
+	F.Intrinsic.Control.Case(4)
+		V.Global.iRangeSlot.Set(0)
+	F.Intrinsic.Control.Case(5)
+		V.Global.iRangeSlot.Set(0)
+	F.Intrinsic.Control.Case(6)
+		V.Global.iRangeSlot.Set(0)
+	F.Intrinsic.Control.Case(7)
+		V.Global.iRangeSlot.Set(1)
+	F.Intrinsic.Control.Case(8)
+		V.Global.iRangeSlot.Set(1)
+	F.Intrinsic.Control.Case(9)
+		V.Global.iRangeSlot.Set(1)
+	F.Intrinsic.Control.Case(10)
+		V.Global.iRangeSlot.Set(1)
+	F.Intrinsic.Control.Case(11)
+		V.Global.iRangeSlot.Set(1)
+	F.Intrinsic.Control.Case(12)
+		V.Global.iRangeSlot.Set(1)
+	F.Intrinsic.Control.Case(13)
+		V.Global.iRangeSlot.Set(1)
+	F.Intrinsic.Control.Case(14)
+		V.Global.iRangeSlot.Set(2)
+	F.Intrinsic.Control.Case(15)
+		V.Global.iRangeSlot.Set(2)
+	F.Intrinsic.Control.Case(16)
+		V.Global.iRangeSlot.Set(2)
+	F.Intrinsic.Control.Case(17)
+		V.Global.iRangeSlot.Set(2)
+	F.Intrinsic.Control.Case(18)
+		V.Global.iRangeSlot.Set(2)
+	F.Intrinsic.Control.Case(19)
+		V.Global.iRangeSlot.Set(2)
+	F.Intrinsic.Control.Case(20)
+		V.Global.iRangeSlot.Set(2)
+	F.Intrinsic.Control.Case(21)
+		V.Global.iRangeSlot.Set(3)
+	F.Intrinsic.Control.Case(22)
+		V.Global.iRangeSlot.Set(3)
+	F.Intrinsic.Control.Case(23)
+		V.Global.iRangeSlot.Set(3)
+	F.Intrinsic.Control.Case(24)
+		V.Global.iRangeSlot.Set(3)
+	F.Intrinsic.Control.Case(25)
+		V.Global.iRangeSlot.Set(3)
+	F.Intrinsic.Control.Case(26)
+		V.Global.iRangeSlot.Set(3)
+	F.Intrinsic.Control.Case(27)
+		V.Global.iRangeSlot.Set(3)
+	F.Intrinsic.Control.Case(28)
+		V.Global.iRangeSlot.Set(4)
+	F.Intrinsic.Control.Case(29)
+		V.Global.iRangeSlot.Set(4)
+	F.Intrinsic.Control.Case(30)
+		V.Global.iRangeSlot.Set(4)
+	F.Intrinsic.Control.Case(31)
+		V.Global.iRangeSlot.Set(4)
+	F.Intrinsic.Control.Case(32)
+		V.Global.iRangeSlot.Set(4)
+	F.Intrinsic.Control.Case(33)
+		V.Global.iRangeSlot.Set(4)
+	F.Intrinsic.Control.Case(34)
+		V.Global.iRangeSlot.Set(4)
+	F.Intrinsic.Control.Case(35)
+		V.Global.iRangeSlot.Set(5)
+	F.Intrinsic.Control.Case(36)
+		V.Global.iRangeSlot.Set(5)
+	F.Intrinsic.Control.Case(37)
+		V.Global.iRangeSlot.Set(5)
+	F.Intrinsic.Control.Case(38)
+		V.Global.iRangeSlot.Set(5)
+	F.Intrinsic.Control.Case(39)
+		V.Global.iRangeSlot.Set(5)
+	F.Intrinsic.Control.Case(40)
+		V.Global.iRangeSlot.Set(5)
+	F.Intrinsic.Control.Case(41)
+		V.Global.iRangeSlot.Set(5)
+	F.Intrinsic.Control.Case(42)
+		V.Global.iRangeSlot.Set(6)
+	F.Intrinsic.Control.Case(43)
+		V.Global.iRangeSlot.Set(6)
+	F.Intrinsic.Control.Case(44)
+		V.Global.iRangeSlot.Set(6)
+	F.Intrinsic.Control.Case(45)
+		V.Global.iRangeSlot.Set(6)
+	F.Intrinsic.Control.Case(46)
+		V.Global.iRangeSlot.Set(6)
+	F.Intrinsic.Control.Case(47)
+		V.Global.iRangeSlot.Set(6)
+	F.Intrinsic.Control.Case(48)
+		V.Global.iRangeSlot.Set(6)
+F.Intrinsic.Control.EndSelect
+
+Program.Sub.GetRangeSlot.End
+
+
